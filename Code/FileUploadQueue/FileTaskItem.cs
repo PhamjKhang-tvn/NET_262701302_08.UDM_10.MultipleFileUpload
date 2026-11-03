@@ -4,7 +4,14 @@ namespace ChatApp_Client.Services
 {
     public enum FileStatus
     {
-        Pending, Connecting, Sending, Receiving, Paused, Completed, Failed, Cancelled
+        Pending,
+        Connecting,
+        Sending,
+        Receiving,
+        Paused,
+        Completed,
+        Failed,
+        Cancelled
     }
 
     public class FileTaskItem
@@ -18,3 +25,4 @@ namespace ChatApp_Client.Services
         public string ErrorMessage { get; set; }
     }
 }
+```[cite: 3]
