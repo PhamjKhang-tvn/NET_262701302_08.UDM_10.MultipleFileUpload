@@ -25,4 +25,3 @@ namespace ChatApp_Client.Services
         public string ErrorMessage { get; set; }
     }
 }
-```[cite: 3]
