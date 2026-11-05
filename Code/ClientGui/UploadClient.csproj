@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Phiên bản .NET: dùng net10.0-windows làm mặc định.
+       Khi TV1 chốt SDK chung của Solution thì đổi TargetFramework cho trùng. -->
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <RootNamespace>UploadClient</RootNamespace>
+    <AssemblyName>UploadClient</AssemblyName>
+  </PropertyGroup>
+
+</Project>
