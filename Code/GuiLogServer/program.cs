@@ -3,8 +3,8 @@ using System.Drawing;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
-using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 using System.Windows.Forms;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -32,6 +32,8 @@ internal sealed class ServerForm : Form
         Value = 8080,
         Width = 90
     };
+    private readonly TextBox _receiveFolderInput = new() { Dock = DockStyle.Fill };
+    private readonly Button _browseFolderButton = new() { Text = "Chọn thư mục...", AutoSize = true };
     private readonly Button _startButton = new() { Text = "Bật server", AutoSize = true };
     private readonly Button _stopButton = new() { Text = "Tắt server", AutoSize = true, Enabled = false };
     private readonly Button _saveButton = new() { Text = "Lưu bằng chứng", AutoSize = true };
@@ -57,6 +59,7 @@ internal sealed class ServerForm : Form
     };
     private readonly List<string> _logLines = [];
     private readonly HttpClient _httpClient = new() { Timeout = TimeSpan.FromSeconds(10) };
+    private readonly FileReceiveService _fileReceiveService = new();
     private readonly System.Windows.Forms.Timer _metricsTimer = new() { Interval = 500 };
 
     private WebApplication? _webApplication;
@@ -69,10 +72,15 @@ internal sealed class ServerForm : Form
         MinimumSize = new Size(850, 620);
         Size = new Size(1100, 760);
         StartPosition = FormStartPosition.CenterScreen;
+        _receiveFolderInput.Text = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+            "GuiLogServer",
+            "Received");
 
         BuildLayout();
         _startButton.Click += async (_, _) => await StartServerAsync();
         _stopButton.Click += async (_, _) => await StopServerAsync();
+        _browseFolderButton.Click += (_, _) => BrowseReceiveFolder();
         _saveButton.Click += (_, _) => SaveEvidence();
         _metricsTimer.Tick += (_, _) => _requestCountLabel.Text = $"Request: {Volatile.Read(ref _requestCount)}";
         _metricsTimer.Start();
@@ -88,11 +96,12 @@ internal sealed class ServerForm : Form
             Dock = DockStyle.Fill,
             Padding = new Padding(14),
             ColumnCount = 1,
-            RowCount = 5
+            RowCount = 6
         };
         root.RowStyles.Add(new RowStyle(SizeType.Absolute, 48));
         root.RowStyles.Add(new RowStyle(SizeType.Absolute, 60));
         root.RowStyles.Add(new RowStyle(SizeType.Absolute, 38));
+        root.RowStyles.Add(new RowStyle(SizeType.Absolute, 42));
         root.RowStyles.Add(new RowStyle(SizeType.Absolute, 86));
         root.RowStyles.Add(new RowStyle(SizeType.Percent, 100));
 
@@ -121,6 +130,26 @@ internal sealed class ServerForm : Form
         root.Controls.Add(serverPanel, 0, 1);
         root.Controls.Add(_addressLabel, 0, 2);
 
+        var folderPanel = new TableLayoutPanel
+        {
+            Dock = DockStyle.Fill,
+            ColumnCount = 3,
+            RowCount = 1,
+            Padding = new Padding(4, 2, 4, 2)
+        };
+        folderPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 112));
+        folderPanel.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100));
+        folderPanel.ColumnStyles.Add(new ColumnStyle(SizeType.AutoSize));
+        folderPanel.Controls.Add(new Label
+        {
+            Text = "Thư mục nhận:",
+            Dock = DockStyle.Fill,
+            TextAlign = ContentAlignment.MiddleLeft
+        }, 0, 0);
+        folderPanel.Controls.Add(_receiveFolderInput, 1, 0);
+        folderPanel.Controls.Add(_browseFolderButton, 2, 0);
+        root.Controls.Add(folderPanel, 0, 3);
+
         var testsPanel = new FlowLayoutPanel
         {
             Dock = DockStyle.Fill,
@@ -132,13 +161,12 @@ internal sealed class ServerForm : Form
         testsPanel.Controls.Add(CreateButton("Test mất kết nối", async () => await TestDisconnectAsync()));
         testsPanel.Controls.Add(CreateButton("Tải thấp (10)", async () => await TestLoadAsync(10, 5)));
         testsPanel.Controls.Add(CreateButton("Tải cao (100)", async () => await TestLoadAsync(100, 25)));
-        testsPanel.Controls.Add(CreateButton("So sánh 2 file", () =>
+        testsPanel.Controls.Add(CreateButton("Đối chiếu nguồn–đích", () =>
         {
-            CompareFiles();
-            return Task.CompletedTask;
+            return CompareFilesAsync();
         }));
         testsPanel.Controls.Add(_saveButton);
-        root.Controls.Add(testsPanel, 0, 3);
+        root.Controls.Add(testsPanel, 0, 4);
 
         var logPanel = new TableLayoutPanel { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 2 };
         logPanel.RowStyles.Add(new RowStyle(SizeType.Absolute, 28));
@@ -151,7 +179,7 @@ internal sealed class ServerForm : Form
             TextAlign = ContentAlignment.MiddleLeft
         }, 0, 0);
         logPanel.Controls.Add(_logBox, 0, 1);
-        root.Controls.Add(logPanel, 0, 4);
+        root.Controls.Add(logPanel, 0, 5);
 
         Controls.Add(root);
     }
@@ -163,23 +191,56 @@ internal sealed class ServerForm : Form
         return button;
     }
 
+    private void BrowseReceiveFolder()
+    {
+        using var dialog = new FolderBrowserDialog
+        {
+            Description = "Chọn thư mục dùng để lưu tệp nhận được",
+            SelectedPath = Directory.Exists(_receiveFolderInput.Text)
+                ? _receiveFolderInput.Text
+                : Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+            ShowNewFolderButton = true
+        };
+        if (dialog.ShowDialog(this) == DialogResult.OK)
+            _receiveFolderInput.Text = dialog.SelectedPath;
+    }
+
     private async Task StartServerAsync()
     {
         if (_webApplication is not null)
             return;
 
         var port = (int)_portInput.Value;
+        string receiveFolder;
+        try
+        {
+            receiveFolder = Path.GetFullPath(_receiveFolderInput.Text.Trim());
+            Directory.CreateDirectory(receiveFolder);
+        }
+        catch (Exception ex) when (ex is ArgumentException or IOException or UnauthorizedAccessException or NotSupportedException)
+        {
+            AddLog("ERROR", $"Không thể dùng thư mục nhận: {ex.Message}");
+            MessageBox.Show(this, ex.Message, "Thư mục nhận không hợp lệ", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return;
+        }
+
         WebApplication? app = null;
 
         try
         {
             var builder = WebApplication.CreateBuilder();
-            builder.WebHost.ConfigureKestrel(options => options.ListenAnyIP(port));
+            builder.WebHost.ConfigureKestrel(options =>
+            {
+                options.Limits.MaxRequestBodySize = null;
+                options.ListenAnyIP(port);
+            });
             app = builder.Build();
-            app.Run(HandleRequestAsync);
+            app.Run(context => HandleRequestAsync(context, receiveFolder));
             await app.StartAsync();
             _webApplication = app;
             _portInput.Enabled = false;
+            _receiveFolderInput.Enabled = false;
+            _browseFolderButton.Enabled = false;
             _startButton.Enabled = false;
             _stopButton.Enabled = true;
             var addresses = GetNetworkAddresses();
@@ -191,6 +252,8 @@ internal sealed class ServerForm : Form
             _addressLabel.Text = $"Địa chỉ kết nối (cùng mạng LAN): {string.Join("  |  ", connectionUrls)}";
             _addressToolTip.SetToolTip(_addressLabel, string.Join(Environment.NewLine, connectionUrls));
             AddLog("INFO", $"Server đã bật trên tất cả giao diện mạng, cổng {port}. Địa chỉ: {string.Join(", ", connectionUrls)}");
+            AddLog("INFO", $"Thư mục nhận: {receiveFolder}");
+            AddLog("INFO", $"Nhận tệp: POST /upload?filename=<tên-tệp> với nội dung request là bytes thô của tệp.");
             AddLog("WARN", "Chỉ chia sẻ trên mạng tin cậy; cho phép cổng qua firewall ở hồ sơ Private nếu Windows chặn kết nối.");
         }
         catch (IOException ex)
@@ -214,6 +277,13 @@ internal sealed class ServerForm : Form
             AddLog("ERROR", $"Không thể mở cổng server {port}: {ex.Message}");
             MessageBox.Show(this, ex.Message, "Không thể mở cổng server", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
+        catch (UnauthorizedAccessException ex)
+        {
+            if (app is not null)
+                await app.DisposeAsync();
+            AddLog("ERROR", $"Không có quyền khởi động server hoặc truy cập thư mục nhận: {ex.Message}");
+            MessageBox.Show(this, ex.Message, "Không đủ quyền", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
     }
 
     private async Task StopServerAsync()
@@ -226,6 +296,8 @@ internal sealed class ServerForm : Form
         await app.StopAsync();
         await app.DisposeAsync();
         _portInput.Enabled = true;
+        _receiveFolderInput.Enabled = true;
+        _browseFolderButton.Enabled = true;
         _startButton.Enabled = true;
         _stopButton.Enabled = false;
         _statusLabel.Text = "● Đang dừng";
@@ -253,19 +325,92 @@ internal sealed class ServerForm : Form
             .ToArray();
     }
 
-    private async Task HandleRequestAsync(HttpContext context)
+    private async Task HandleRequestAsync(HttpContext context, string receiveFolder)
     {
         Interlocked.Increment(ref _requestCount);
         var request = context.Request;
         var path = request.Path.Value?.ToLowerInvariant() ?? "/";
         var method = request.Method;
         var statusCode = (int)HttpStatusCode.OK;
+        var contentType = "text/plain; charset=utf-8";
         string responseText;
 
         if (path == "/health" && method == "GET")
         {
             responseText = $"{{\"status\":\"ok\",\"time\":\"{DateTimeOffset.Now:O}\"}}";
             AddLog("INFO", $"{method} /health -> 200");
+        }
+        else if (path == "/upload" && method == "POST")
+        {
+            var fileName = request.Query["filename"].ToString();
+            if (string.IsNullOrWhiteSpace(fileName))
+            {
+                statusCode = (int)HttpStatusCode.BadRequest;
+                responseText = "Thiếu tham số filename.";
+                AddLog("WARN", "POST /upload -> 400 (thiếu filename)");
+            }
+            else
+            {
+                try
+                {
+                    var received = await _fileReceiveService.SaveAsync(
+                        request.Body,
+                        receiveFolder,
+                        fileName,
+                        request.ContentLength,
+                        context.RequestAborted);
+                    statusCode = (int)HttpStatusCode.Created;
+                    contentType = "application/json; charset=utf-8";
+                    responseText = JsonSerializer.Serialize(new
+                    {
+                        received.FileName,
+                        received.Size,
+                        received.Sha256
+                    });
+                    AddLog("PASS", $"POST /upload -> 201 | {received.FileName} | {received.Size} byte | SHA-256 {received.Sha256}");
+                }
+                catch (InvalidReceivedFileNameException ex)
+                {
+                    statusCode = (int)HttpStatusCode.BadRequest;
+                    responseText = ex.Message;
+                    AddLog("WARN", $"POST /upload -> 400: {ex.Message}");
+                }
+                catch (DuplicateReceivedFileException ex)
+                {
+                    statusCode = (int)HttpStatusCode.Conflict;
+                    responseText = ex.Message;
+                    AddLog("WARN", $"POST /upload -> 409: {ex.Message}");
+                }
+                catch (ReceivedFileTooLargeException ex)
+                {
+                    statusCode = (int)HttpStatusCode.RequestEntityTooLarge;
+                    responseText = ex.Message;
+                    AddLog("WARN", $"POST /upload -> 413: {ex.Message}");
+                }
+                catch (EndOfStreamException ex)
+                {
+                    statusCode = (int)HttpStatusCode.BadRequest;
+                    responseText = ex.Message;
+                    AddLog("WARN", $"POST /upload -> 400 (nội dung nhận chưa đủ): {ex.Message}");
+                }
+                catch (OperationCanceledException) when (context.RequestAborted.IsCancellationRequested)
+                {
+                    AddLog("WARN", $"Client ngắt kết nối khi đang gửi tệp '{fileName}'. Tệp tạm đã được dọn.");
+                    return;
+                }
+                catch (IOException ex)
+                {
+                    statusCode = (int)HttpStatusCode.InternalServerError;
+                    responseText = "Không thể nhận hoặc ghi tệp.";
+                    AddLog("ERROR", $"Lỗi nhận tệp '{fileName}': {ex.Message}");
+                }
+                catch (UnauthorizedAccessException ex)
+                {
+                    statusCode = (int)HttpStatusCode.InternalServerError;
+                    responseText = "Không có quyền ghi vào thư mục nhận.";
+                    AddLog("ERROR", $"Không có quyền lưu tệp '{fileName}': {ex.Message}");
+                }
+            }
         }
         else if (path == "/echo" && method is "GET" or "POST")
         {
@@ -297,7 +442,7 @@ internal sealed class ServerForm : Form
         }
         else
         {
-            statusCode = (int)(path == "/health" || path == "/echo"
+            statusCode = (int)(path is "/health" or "/echo" or "/upload"
                 ? HttpStatusCode.MethodNotAllowed
                 : HttpStatusCode.NotFound);
             responseText = statusCode == (int)HttpStatusCode.NotFound ? "Không tìm thấy endpoint." : "Method không được hỗ trợ.";
@@ -306,7 +451,7 @@ internal sealed class ServerForm : Form
 
         var response = context.Response;
         response.StatusCode = statusCode;
-        response.ContentType = "text/plain; charset=utf-8";
+        response.ContentType = contentType;
 
         try
         {
@@ -468,33 +613,31 @@ internal sealed class ServerForm : Form
             $"{failedCount} lỗi, đồng thời tối đa {maxConcurrency}, thời gian {stopwatch.Elapsed.TotalSeconds:F2}s.");
     }
 
-    private void CompareFiles()
+    private async Task CompareFilesAsync()
     {
-        using var firstDialog = new OpenFileDialog { Title = "Chọn file thứ nhất" };
-        if (firstDialog.ShowDialog(this) != DialogResult.OK)
+        using var sourceDialog = new OpenFileDialog { Title = "Chọn tệp nguồn" };
+        if (sourceDialog.ShowDialog(this) != DialogResult.OK)
             return;
 
-        using var secondDialog = new OpenFileDialog { Title = "Chọn file thứ hai" };
-        if (secondDialog.ShowDialog(this) != DialogResult.OK)
+        using var destinationDialog = new OpenFileDialog { Title = "Chọn tệp đích nhận được" };
+        if (destinationDialog.ShowDialog(this) != DialogResult.OK)
             return;
 
         try
         {
-            var firstHash = SHA256.HashData(File.ReadAllBytes(firstDialog.FileName));
-            var secondHash = SHA256.HashData(File.ReadAllBytes(secondDialog.FileName));
-            var same = CryptographicOperations.FixedTimeEquals(firstHash, secondHash);
-            AddLog(same ? "PASS" : "INFO",
-                $"So sánh file: {(same ? "GIỐNG NHAU" : "KHÁC NHAU")} | " +
-                $"{Path.GetFileName(firstDialog.FileName)} ↔ {Path.GetFileName(secondDialog.FileName)} | " +
-                $"SHA-256: {Convert.ToHexString(firstHash)} / {Convert.ToHexString(secondHash)}");
+            var result = await FileIntegrityComparer.CompareAsync(sourceDialog.FileName, destinationDialog.FileName);
+            AddLog(result.FilesMatch ? "PASS" : "FAIL",
+                $"Đối chiếu nguồn–đích: {(result.FilesMatch ? "KHỚP" : "KHÔNG KHỚP")} | " +
+                $"Nguồn: {Path.GetFileName(result.SourcePath)} ({result.SourceSize} byte, SHA-256 {result.SourceSha256}) | " +
+                $"Đích: {Path.GetFileName(result.DestinationPath)} ({result.DestinationSize} byte, SHA-256 {result.DestinationSha256})");
         }
         catch (IOException ex)
         {
-            AddLog("ERROR", $"Không đọc được file để so sánh: {ex.Message}");
+            AddLog("ERROR", $"Không đọc được tệp để đối chiếu: {ex.Message}");
         }
         catch (UnauthorizedAccessException ex)
         {
-            AddLog("ERROR", $"Không có quyền đọc file: {ex.Message}");
+            AddLog("ERROR", $"Không có quyền đọc tệp: {ex.Message}");
         }
     }
 
