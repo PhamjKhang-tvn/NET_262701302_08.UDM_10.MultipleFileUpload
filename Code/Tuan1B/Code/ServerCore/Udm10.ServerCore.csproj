@@ -1,0 +1,37 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="15.0" DefaultTargets="Build">
+  <PropertyGroup>
+    <Configuration>Debug</Configuration>
+    <Platform>AnyCPU</Platform>
+    <ProjectGuid>{7C120B14-5D0D-52C2-BC21-4D6450D3779F}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>Udm10.ServerCore</RootNamespace>
+    <AssemblyName>Udm10.ServerCore</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <LangVersion>5</LangVersion>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+    <OutputPath>..\..\Build\</OutputPath>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Runtime.Serialization" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="*.cs" />
+    <Compile Include="..\BuildInfo.cs">
+      <Link>BuildInfo.cs</Link>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Shared\Udm10.Shared.csproj">
+      <Project>{B4B756F6-6D19-55CA-95A4-D114DE9EC6DA}</Project>
+      <Name>Udm10.Shared</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>
