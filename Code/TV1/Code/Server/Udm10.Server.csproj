@@ -1,0 +1,50 @@
+<?xml version='1.0' encoding='utf-8'?>
+<Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="15.0" DefaultTargets="Build">
+  <PropertyGroup>
+    <Configuration>Debug</Configuration>
+    <Platform>AnyCPU</Platform>
+    <ProjectGuid>{BE12F314-696C-599B-9B24-26C82FA3EF32}</ProjectGuid>
+    <OutputType>WinExe</OutputType>
+    <RootNamespace>Udm10.Server</RootNamespace>
+    <AssemblyName>Udm10.Server</AssemblyName>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <LangVersion>5</LangVersion>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
+    <OutputPath>..\..\Build\</OutputPath>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <ApplicationManifest>..\app.manifest</ApplicationManifest>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Drawing" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="*.cs" />
+    <Compile Include="..\BuildInfo.cs">
+      <Link>BuildInfo.cs</Link>
+    </Compile>
+    <Compile Include="..\UiCommon\Theme.cs">
+      <Link>Theme.cs</Link>
+    </Compile>
+    <None Include="..\App.config">
+      <Link>App.config</Link>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Shared\Udm10.Shared.csproj">
+      <Project>{B4B756F6-6D19-55CA-95A4-D114DE9EC6DA}</Project>
+      <Name>Udm10.Shared</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\ServerCore\Udm10.ServerCore.csproj">
+      <Project>{7C120B14-5D0D-52C2-BC21-4D6450D3779F}</Project>
+      <Name>Udm10.ServerCore</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>
