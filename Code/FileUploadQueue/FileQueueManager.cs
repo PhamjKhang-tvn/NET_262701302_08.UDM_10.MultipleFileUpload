@@ -22,64 +22,109 @@ namespace ChatApp_Client.Services
         }
 
         // Thêm file vào hàng đợi (Hỗ trợ xếp tiếp các file chưa gửi)
-        public void EnqueueFile(FileTaskItem item)
+using System;
+using System.ComponentModel;
+using System.Runtime.CompilerServices;
+
+namespace ChatApp_Client.Services
+{
+    public enum FileStatus
+    {
+        Pending,
+        Connecting,
+        Sending,
+        Receiving,
+        Paused,
+        Completed,
+        Failed,
+        Cancelled
+    }
+
+    public class FileTaskItem : INotifyPropertyChanged
+    {
+        public string FileId { get; set; } = Guid.NewGuid().ToString();
+
+        public string FilePath { get; set; }
+
+        public string FileName { get; set; }
+
+        public long TotalBytes { get; set; }
+
+        private long _transferredBytes;
+
+        public long TransferredBytes
         {
-            item.ResetForRetry(); // Reset trạng thái, tốc độ, tiến độ ban đầu
-            _fileQueue.Enqueue(item);
-            OnFileStatusChanged?.Invoke(this, item);
+            get => _transferredBytes;
+            set
+            {
+                if (_transferredBytes != value)
+                {
+                    _transferredBytes = value;
+                    OnPropertyChanged();
+                    OnPropertyChanged(nameof(ProgressPercentage));
+                }
+            }
         }
 
-        // Thực thi hàng đợi (Ngăn chạy trùng lặp, xử lý bất đồng bộ và cô lập lỗi)
-        public async Task StartProcessingAsync(Func<FileTaskItem, CancellationToken, Task> uploadAction, CancellationToken ct)
+        public double ProgressPercentage
         {
-            lock (_lockObj)
+            get
             {
-                if (_isRunning) return; // Chặn không cho chạy trùng queue nếu đang chạy dở
-                _isRunning = true;
+                if (TotalBytes <= 0)
+                    return 0;
+
+                return Math.Min(100,
+                    (double)TransferredBytes / TotalBytes * 100);
             }
+        }
 
-            try
+        private FileStatus _status = FileStatus.Pending;
+
+        public FileStatus Status
+        {
+            get => _status;
+            set
             {
-                while (_fileQueue.TryDequeue(out var fileItem))
+                if (_status != value)
                 {
-                    if (ct.IsCancellationRequested) break;
-
-                    await _semaphore.WaitAsync(ct);
-
-                    _ = Task.Run(async () =>
-                    {
-                        try
-                        {
-                            fileItem.Status = FileStatus.Connecting;
-                            OnFileStatusChanged?.Invoke(this, fileItem);
-
-                            // Gọi hành động truyền tải thực tế
-                            await uploadAction(fileItem, ct);
-
-                            fileItem.Status = FileStatus.Completed;
-                            OnFileStatusChanged?.Invoke(this, fileItem);
-                        }
-                        catch (Exception ex)
-                        {
-                            // CÔ LẬP LỖI: Lỗi ở 1 file sẽ chuyển sang Failed riêng file đó, không làm chết queue
-                            fileItem.Status = FileStatus.Failed;
-                            fileItem.ErrorMessage = ex.Message;
-                            OnFileStatusChanged?.Invoke(this, fileItem);
-                        }
-                        finally
-                        {
-                            _semaphore.Release();
-                        }
-                    }, ct);
+                    _status = value;
+                    OnPropertyChanged();
                 }
             }
-            finally
+        }
+
+        private string _errorMessage;
+
+        public string ErrorMessage
+        {
+            get => _errorMessage;
+            set
             {
-                lock (_lockObj)
+                if (_errorMessage != value)
                 {
-                    _isRunning = false; // Mở khóa cho phép chạy queue đợt tiếp theo
+                    _errorMessage = value;
+                    OnPropertyChanged();
                 }
             }
+        }
+
+        // Reset dữ liệu khi thêm lại hoặc thử truyền lại file
+        public void ResetForRetry()
+        {
+            TransferredBytes = 0;
+            ErrorMessage = null;
+            Status = FileStatus.Pending;
+        }
+
+        public event PropertyChangedEventHandler PropertyChanged;
+
+        protected void OnPropertyChanged(
+            [CallerMemberName] string propertyName = null)
+        {
+            PropertyChanged?.Invoke(
+                this,
+                new PropertyChangedEventArgs(propertyName));
         }
     }
 }
+
