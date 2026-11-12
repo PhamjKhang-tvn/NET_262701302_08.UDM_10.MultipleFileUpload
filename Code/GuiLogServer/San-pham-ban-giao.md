@@ -29,7 +29,7 @@ Phần còn lại hiển thị nhật ký hoạt động. Mỗi dòng có thời
 
 Sau mỗi lượt kiểm thử, xem nhật ký để xác định kết quả `PASS` hoặc `FAIL`, rồi chọn **Lưu bằng chứng** để xuất nhật ký. Nếu gặp lỗi, ghi lại các bước thực hiện và chụp ảnh giao diện nếu cần. Nhóm nên thống nhất nơi lưu bằng chứng để mọi người cùng truy cập.
 
-Mỗi thành viên nên kiểm tra `git diff --staged` trước khi commit phần việc của mình và dùng thông điệp commit ngắn gọn, mô tả đúng nội dung thay đổi.
+Mỗi thành viên nên làm việc trên branch riêng, chỉ stage các file thuộc phần việc của mình, kiểm tra `git status --short`, `git diff` và `git diff --staged`, rồi chạy build/test liên quan trước khi commit. Sau khi push branch, mở Pull Request (PR) kèm mô tả và kết quả kiểm thử để thành viên khác review. Tác giả xử lý nhận xét và cập nhật PR; chỉ tích hợp sau khi review được chấp thuận. Nếu nhóm không dùng PR, cần review chéo và theo quy trình tích hợp đã thống nhất.
 
 Listener TV4 chưa có trong repository tại thời điểm làm phần này nên chưa thể ghép và kiểm tra giao thức trực tiếp. Phần ghi file được tách thành `FileReceiveService` để listener có thể gọi khi sẵn sàng; README ghi rõ cách nối stream và độ dài file. Máy chủ hiện chưa có chức năng đăng nhập hoặc mã hóa, vì vậy chỉ nên sử dụng trong mạng tin cậy. Nếu Windows Firewall chặn kết nối, chỉ cho phép cổng ở hồ sơ mạng **Private**; không mở máy chủ ra mạng công cộng hoặc Internet.
 

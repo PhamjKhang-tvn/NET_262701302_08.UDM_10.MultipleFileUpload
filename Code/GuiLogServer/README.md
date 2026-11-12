@@ -63,9 +63,12 @@ Bộ kiểm tra tạo tệp text, ảnh PNG, tệp 0 byte, tên tệp tiếng Vi
 
 Trong repository hiện chưa có mã listener TV4 để ghép và kiểm tra giao thức trực tiếp. Phần ghi file được tách thành `FileReceiveService.SaveAsync(Stream, destinationDirectory, fileName, expectedLength, cancellationToken)`. Khi có listener TV4, listener có thể gọi dịch vụ này với stream chứa đúng phần payload và độ dài file; lớp dịch vụ sẽ ghi theo luồng, tính SHA-256 và không chiếm thêm bộ nhớ theo kích thước file. Nếu giao thức TV4 chưa cung cấp kích thước, cần bổ sung ranh giới/độ dài payload trước khi nối để không đọc lấn sang file tiếp theo.
 
-## Ghi bằng chứng và commit cá nhân
+## Ghi bằng chứng, Git và review
 
 1. Chạy từng kịch bản và kiểm tra log có `PASS`; nếu có `FAIL`, lưu log và ghi lại bước tái hiện cùng thông báo lỗi.
 2. Bấm **Lưu bằng chứng** sau mỗi lượt; đặt tên file có ngày giờ và người thực hiện, ví dụ `evidence-20261031-an.txt`. Có thể chụp thêm ảnh GUI thể hiện trạng thái và log.
-3. Mỗi thành viên chỉ stage phần mình thay đổi, xem lại bằng `git diff --staged`, rồi commit với thông điệp nêu rõ nội dung, ví dụ `test: add invalid-input evidence`.
-4. Không đưa file bằng chứng, dữ liệu cá nhân hoặc file lớn vào commit nếu nhóm không yêu cầu; thống nhất nơi lưu bằng chứng chung.
+3. Tạo branch riêng cho phần việc, cập nhật từ branch nhóm trước khi làm và chỉ stage các file thuộc phạm vi của mình. Trước khi commit, kiểm tra `git status --short`, `git diff` và `git diff --staged` để chắc chắn không đưa nhầm file hoặc dữ liệu vào commit.
+4. Chạy build và các test liên quan, rồi commit với thông điệp ngắn gọn mô tả thay đổi, ví dụ `test: add invalid-input checks`. Không commit file bằng chứng, dữ liệu cá nhân hoặc file lớn nếu nhóm không yêu cầu.
+5. Push branch lên remote và mở Pull Request (PR) vào branch đã thống nhất của nhóm. Mô tả mục tiêu, cách kiểm thử và kết quả; đính kèm bằng chứng khi phù hợp.
+6. Người review kiểm tra phạm vi thay đổi, tính đúng đắn, xử lý lỗi và kết quả test; để lại nhận xét cụ thể trên PR. Tác giả xử lý nhận xét, chạy lại test cần thiết và cập nhật PR. Chỉ merge sau khi các nhận xét đã được giải quyết và nhóm chấp thuận.
+7. Nếu nhóm không dùng PR, áp dụng các bước kiểm tra diff và review chéo trước khi tích hợp bằng quy trình nhóm đã thống nhất. Thống nhất nơi lưu bằng chứng chung; không đưa bằng chứng vào repository nếu không cần thiết.
