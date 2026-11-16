@@ -1,18 +1,18 @@
-Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.0.31903.59
+﻿Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 18
+VisualStudioVersion = 18.0.0.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Udm10.Shared", "Code\Shared\Udm10.Shared.csproj", "{B4B756F6-6D19-55CA-95A4-D114DE9EC6DA}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Udm10.Shared", "Code\Shared\Udm10.Shared.csproj", "{B4B756F6-6D19-55CA-95A4-D114DE9EC6DA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Udm10.ServerCore", "Code\ServerCore\Udm10.ServerCore.csproj", "{7C120B14-5D0D-52C2-BC21-4D6450D3779F}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Udm10.ServerCore", "Code\ServerCore\Udm10.ServerCore.csproj", "{7C120B14-5D0D-52C2-BC21-4D6450D3779F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Udm10.Client", "Code\Client\Udm10.Client.csproj", "{22E4F32C-EAF2-59E1-8E0B-4F8B63703BC3}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Udm10.Client", "Code\Client\Udm10.Client.csproj", "{22E4F32C-EAF2-59E1-8E0B-4F8B63703BC3}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Udm10.Server", "Code\Server\Udm10.Server.csproj", "{BE12F314-696C-599B-9B24-26C82FA3EF32}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Udm10.Server", "Code\Server\Udm10.Server.csproj", "{BE12F314-696C-599B-9B24-26C82FA3EF32}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Udm10.Headless", "Code\Headless\Udm10.Headless.csproj", "{D2391F1F-4D3E-5457-B7ED-5C8FCE85FE4A}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Udm10.Headless", "Code\Headless\Udm10.Headless.csproj", "{D2391F1F-4D3E-5457-B7ED-5C8FCE85FE4A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Udm10.Tests", "Code\Tests\Udm10.Tests.csproj", "{24AF1622-401C-5DF1-8139-15AADB301884}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Udm10.Tests", "Code\Tests\Udm10.Tests.csproj", "{24AF1622-401C-5DF1-8139-15AADB301884}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
