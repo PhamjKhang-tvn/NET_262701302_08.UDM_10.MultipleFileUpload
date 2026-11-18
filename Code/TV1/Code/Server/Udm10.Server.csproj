@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>Udm10.Server</AssemblyName>
+    <RootNamespace>Udm10.Server</RootNamespace>
+    <ImplicitUsings>disable</ImplicitUsings>
+    <Nullable>disable</Nullable>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ApplicationHighDpiMode>PerMonitorV2</ApplicationHighDpiMode>
+    <Prefer32Bit>false</Prefer32Bit>
+    <ApplicationManifest>..\app.manifest</ApplicationManifest>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="..\BuildInfo.cs" Link="BuildInfo.cs" />
+    <Compile Include="..\UiCommon\Theme.cs" Link="Theme.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Shared\Udm10.Shared.csproj" />
+    <ProjectReference Include="..\ServerCore\Udm10.ServerCore.csproj" />
+  </ItemGroup>
+</Project>

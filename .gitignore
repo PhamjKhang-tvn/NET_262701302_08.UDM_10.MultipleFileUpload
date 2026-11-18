@@ -1,1 +1,24 @@
+Build/
+**/bin/
+**/obj/
+.vs/
+*.user
+*.suo
+*.pdb
+*.exe
+*.dll
+*.part
+*.tmp
+*.bak
+*.7z
+*.zip
+Extra/TestResults/*
+!Extra/TestResults/README.md
+UDM10_Uploads/
+.env
+*.key
+*.pfx
 
+# .NET 10 SDK compilation/test logs
+BuildLogs/
+**/TestResults/
