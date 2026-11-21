@@ -1,70 +1,53 @@
 using System;
-using System.IO;
+using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace ChatApp_Client.Services
+namespace Udm10.Shared
 {
-    public class UploadQueue
+    // TV5: sequential queue = ONE active file per Client. No retry storms and no byte resume.
+    public sealed class UploadQueue
     {
-        private readonly SemaphoreSlim _semaphore;
-        private readonly string _host;
-        private readonly int _port;
-        private readonly int _connectTimeoutSeconds;
-        private readonly int _chunkSizeKb;
-
-        public UploadQueue(string host, int port, int maxConcurrent, int connectTimeoutSeconds, int chunkSizeKb)
+        private int running;
+        public async Task<QueueResult> RunAsync(IList<UploadJob> jobs,ClientOptions options,Action<TransferUpdate> report,CancellationToken token)
         {
-            _semaphore = new SemaphoreSlim(maxConcurrent);
-            _host = host;
-            _port = port;
-            _connectTimeoutSeconds = connectTimeoutSeconds;
-            _chunkSizeKb = chunkSizeKb;
-        }
-
-        public async Task EnqueueAsync(FileTaskItem fileItem, Action<long> onProgressUpdate, CancellationToken cancellationToken)
-        {
+            if(Interlocked.Exchange(ref running,1)==1) throw new InvalidOperationException("Queue is already running.");
+            var result=new QueueResult { Waiting=jobs.Count };
+            var service=new UploadClientService();
             try
             {
-                await _semaphore.WaitAsync(cancellationToken);
-            }
-            catch (OperationCanceledException)
-            {
-                fileItem.Status = FileStatus.Cancelled;
-                fileItem.ErrorMessage = "Đã hủy bởi người dùng";
-                return;
-            }
-
-            try
-            {
-                fileItem.Status = FileStatus.Sending;
-                
-                long total = fileItem.TotalBytes > 0 ? fileItem.TotalBytes : 1024 * 1024 * 5;
-                fileItem.TotalBytes = total;
-                long sent = 0;
-
-                while (sent < total)
+                foreach(var job in jobs)
                 {
-                    cancellationToken.ThrowIfCancellationRequested();
-                    await Task.Delay(50, cancellationToken);
-                    sent += 64 * 1024;
-                    if (sent > total) sent = total;
-                    
-                    fileItem.TransferredBytes = sent;
-                    onProgressUpdate?.Invoke(sent);
+                    if(token.IsCancellationRequested) break;
+                    result.Waiting--;
+                    UploadClientService.Publish(report,job,"Uploading",0,0,0,"Opening file / connecting");
+                    try
+                    {
+                        await service.UploadAsync(job,options,report,token).ConfigureAwait(false);
+                        result.Completed++;
+                    }
+                    catch(OperationCanceledException)
+                    {
+                        result.Errors++;
+                        UploadClientService.Publish(report,job,"Error",0,0,0,"CANCELLED: batch stopped; retry restarts this file from byte zero.");
+                        break;
+                    }
+                    catch(UploadException ex)
+                    {
+                        result.Errors++;
+                        UploadClientService.Publish(report,job,"Error",0,0,0,ex.Code+": "+ex.Message);
+                        if(ex.ConnectionUnavailable) { result.ConnectionLost=true; break; }
+                    }
+                    catch(Exception ex)
+                    {
+                        result.Errors++;
+                        UploadClientService.Publish(report,job,"Error",0,0,0,"UNEXPECTED: "+ex.Message);
+                        // A single local failure must not stop the remaining queue.
+                    }
                 }
-
-                fileItem.Status = FileStatus.Completed;
+                return result;
             }
-            catch (Exception ex)
-            {
-                fileItem.Status = FileStatus.Failed;
-                fileItem.ErrorMessage = ex.Message;
-            }
-            finally
-            {
-                _semaphore.Release();
-            }
+            finally { Interlocked.Exchange(ref running,0); }
         }
     }
 }
