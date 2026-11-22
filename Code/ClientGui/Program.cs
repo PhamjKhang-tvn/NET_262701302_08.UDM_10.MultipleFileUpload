@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Windows.Forms;
 
 namespace UploadClient
@@ -9,7 +9,8 @@ namespace UploadClient
         private static void Main()
         {
             ApplicationConfiguration.Initialize();
-            Application.Run(new MainForm());
+            Application.Run(new Udm10.Client.ClientForm());
         }
     }
 }
+
