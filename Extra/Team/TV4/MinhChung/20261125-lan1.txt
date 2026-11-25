@@ -1,0 +1,35 @@
+TV4 TCP integration tests | 2026-11-25T22:30:08.5316451+07:00
+OS: Microsoft Windows 10.0.26300
+Runtime: .NET 10.0.15
+Evidence: D:\Nam\NET_262701302_08.UDM_10.MultipleFileUpload\BuildLogs\TV4\20261125-223008-f3721e3a
+PASS RECEIVE_EXACT_AND_EMPTY
+PASS TC_12_DUPLICATE
+PASS TC_15_SIZE_LIMIT
+PASS TC_16_INVALID_NAMES
+PASS TC_17_BAD_JSON
+PASS TC_18_BAD_LENGTH
+PASS TC_19_NEGATIVE_SIZE
+PASS TC_20_DISCONNECT
+FAIL TC_21_TIMEOUT | System.IO.IOException: The process cannot access the file 'D:\Nam\NET_262701302_08.UDM_10.MultipleFileUpload\BuildLogs\TV4\20261125-223008-f3721e3a\ad63719ffe0d40068131ccfea39a8df4\.udm10-logs\20261125-223008-79322202.log' because it is being used by another process.
+   at Microsoft.Win32.SafeHandles.SafeFileHandle.CreateFile(String fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options)
+   at Microsoft.Win32.SafeHandles.SafeFileHandle.Open(String fullPath, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, Nullable`1 unixCreateMode)
+   at System.IO.Strategies.OSFileStreamStrategy..ctor(String path, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, Nullable`1 unixCreateMode)
+   at System.IO.Strategies.FileStreamHelpers.ChooseStrategyCore(String path, FileMode mode, FileAccess access, FileShare share, FileOptions options, Int64 preallocationSize, Nullable`1 unixCreateMode)
+   at System.IO.StreamReader.ValidateArgsAndOpenPath(String path, Int32 bufferSize)
+   at System.IO.File.ReadAllText(String path, Encoding encoding)
+   at Udm10.Tests.Program.Timeout() in D:\Nam\NET_262701302_08.UDM_10.MultipleFileUpload\Code\TV1\Code\Tests\Program.cs:line 218
+   at Udm10.Tests.Program.Timeout() in D:\Nam\NET_262701302_08.UDM_10.MultipleFileUpload\Code\TV1\Code\Tests\Program.cs:line 220
+   at Udm10.Tests.Program.Main(String[] args) in D:\Nam\NET_262701302_08.UDM_10.MultipleFileUpload\Code\TV1\Code\Tests\Program.cs:line 51
+PASS TC_22_HASH_MISMATCH
+PASS TC_23_THREE_CLIENTS
+PASS TC_24_BUSY
+PASS TC_25_NAME_RESERVATION
+PASS TC_27_STOP_RESTART
+PASS TC_28_STALE_PARTS
+PASS TC_29_FOLDER_LOCK
+PASS CLIENT_ISOLATION
+PASS COMMIT_IO_FAILURE
+PASS BAD_END
+PASS OBSERVER_ISOLATION
+PASS TV3_SHARED_CLIENT
+RESULT: 20/21 PASS; 1 FAIL
