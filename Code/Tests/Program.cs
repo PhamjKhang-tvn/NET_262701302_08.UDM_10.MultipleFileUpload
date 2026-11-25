@@ -90,6 +90,8 @@ namespace Udm10.Tests
         [DllImport("kernel32.dll",SetLastError=true)] private static extern bool GetPhysicallyInstalledSystemMemory(out ulong totalKb);
         private static int Main(string[] args)
         {
+            if(args.Length>0 && args[0]=="--tv4")
+                return Udm10.Tv4Checks.Tv4ReceiveChecks.Run(args.Skip(1).ToArray()).GetAwaiter().GetResult();
             Output=Path.GetFullPath(args.Length>0?args[0]:Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"TestResults",DateTime.UtcNow.ToString("yyyyMMdd-HHmmss")));
             Directory.CreateDirectory(Output);
             run.StartedUtc=DateTime.UtcNow.ToString("o");
