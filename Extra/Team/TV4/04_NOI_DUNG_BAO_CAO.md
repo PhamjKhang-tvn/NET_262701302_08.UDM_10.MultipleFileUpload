@@ -33,4 +33,4 @@ Minh chứng: [kết quả chung](MinhChung/refactor-20261125-225824/official-co
 
 Mã nhận file gốc đã có trong repo; commit chuyển nhánh không coi toàn bộ nguồn là đóng góp mới. Các lần chạy 22:30, 22:31, 22:37 trên main được giữ làm lịch sử. Lượt đầu có lỗi harness đọc log trên Windows, đã sửa FileShare.ReadWrite; không xóa dấu vết FAIL.
 
-Lỗi I/O được kiểm tra bằng việc tạo file đích sau READY, chưa mô phỏng đĩa đầy/quyền ghi. Chưa nghiệm thu GUI, LAN, review trực tiếp TV3 hoặc video cá nhân. DOCX/TV4.docx vẫn là Word cũ, chưa đồng bộ trong lần chuyển nhánh này.
+Lỗi I/O được kiểm tra bằng việc tạo file đích sau READY, chưa mô phỏng đĩa đầy/quyền ghi. Chưa nghiệm thu GUI, LAN, review trực tiếp TV3 hoặc video cá nhân. DOCX/TV4.docx đã được đồng bộ trong lần cập nhật Word tiếp theo: năm trang, đúng giao thức và đường dẫn nhánh cấu trúc chung, có kết quả kiểm thử và giới hạn nghiệm thu.

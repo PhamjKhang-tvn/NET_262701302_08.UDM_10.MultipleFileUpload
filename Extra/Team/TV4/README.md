@@ -55,6 +55,6 @@ Có thể mở GUI đã build tại Code/Server/bin/Debug/net10.0-windows/Udm10.
 
 ## Word và nghiệm thu
 
-DOCX/TV4.docx vẫn là báo cáo Word cũ và chưa được cập nhật trong commit chuyển nhánh này. Nội dung báo cáo hiện tại nằm ở 04_NOI_DUNG_BAO_CAO.md; Word cần được đồng bộ trước khi nghiệm thu tài liệu. Chưa xác nhận review TV3, demo LAN hoặc video cá nhân.
+Báo cáo [DOCX/TV4.docx](../../../DOCX/TV4.docx) đã được cập nhật theo mã tích hợp 7db46de: giao thức JSON, file .part, SHA-256, từ chối tên trùng, vòng đời server và kết quả kiểm thử thực tế. Bản Word đã được xuất xem trước và kiểm tra đủ năm trang. Nội dung tóm tắt nằm ở 04_NOI_DUNG_BAO_CAO.md. Chưa xác nhận review TV3, demo LAN hoặc video cá nhân.
 
 Giao thức chuẩn: [Extra/Guides/PROTOCOL.md](../../Guides/PROTOCOL.md). File kiểm thử chính thức: Extra/TestCases/UDM10_Test_Cases.xlsx.

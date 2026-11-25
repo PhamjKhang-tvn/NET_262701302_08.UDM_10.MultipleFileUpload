@@ -42,3 +42,9 @@ Lúc 22:37 ngày 25/11/2026 (+07:00), tăng độ chặt test ba client bằng b
 Theo yêu cầu chuyển đúng nhánh, tích hợp trên refactor/project-structure từ baseline 8f74e24. Đặt ServerEngine tại Code/ServerCore/ServerEngine.cs, giữ Headless/GUI/Shared/harness chung. Thêm Code/Tests/TV4ReceiveChecks.cs và lựa chọn --tv4 trong harness. Script chạy đặt tại Tools/Test-TV4.ps1.
 
 Build đủ sáu project thành công, 0 error, 720 warning CA1416 từ GUI. Harness chung đạt 28/28 và harness TV4 đạt 21/21. Các bộ có ca trùng, không cộng thành 49 ca nghiệm thu độc lập. TC_01–TC_08, thao tác GUI và LAN chưa nghiệm thu. Minh chứng mới: MinhChung/refactor-20261125-225824/. DOCX/TV4.docx chưa sửa trong lần chuyển nhánh này.
+
+## Cập nhật Word ngày 25 tháng 11 năm 2026
+
+Đồng bộ DOCX/TV4.docx với mã tích hợp 7db46de trên refactor/project-structure. Thay mô tả header nhị phân và tự thêm số vào tên trùng bằng giao thức JSON của Shared, chính sách DUPLICATE, file .part, SHA-256 và StopAsync. Cập nhật đường dẫn mã, sơ đồ, kết quả thật 28/28 harness chung và 21/21 bộ bổ sung; giữ cảnh báo GUI và phạm vi chưa nghiệm thu.
+
+Bản báo cáo năm trang được mở/xuất PDF bằng Microsoft Word và chuyển thành PNG qua pipeline render_docx.py với PDFium để kiểm tra trực quan từng trang. Không đổi mã C# hoặc kết quả kiểm thử trong lần sửa tài liệu này. Bản gốc và ảnh QA giữ tại BuildLogs/TV4-Word, không đưa vào commit. Trạng thái Word chưa sửa trong mục chuyển nhánh phía trên là lịch sử trước lần cập nhật này.
