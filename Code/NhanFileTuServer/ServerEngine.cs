@@ -29,7 +29,6 @@ namespace Udm10.ServerCore
     {
         private readonly object gate=new object();
         private readonly object logGate=new object();
-        private readonly object stopGate=new object();
         private readonly HashSet<string> names=new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         private readonly Dictionary<string,Task> sessions=new Dictionary<string,Task>();
         private TcpListener listener;
@@ -38,7 +37,6 @@ namespace Udm10.ServerCore
         private FileStream folderLock;
         private StreamWriter logWriter;
         private Task acceptTask;
-        private Task stopTask;
         private ServerOptions options;
         private string incoming;
         public event Action<string> Log;
@@ -51,7 +49,6 @@ namespace Udm10.ServerCore
         public void Start(ServerOptions config)
         {
             if(shutdown!=null) throw new InvalidOperationException("This server instance was already started. Create a new instance to restart.");
-            if(config==null) throw new ArgumentNullException("config");
             config.Validate();
             options=new ServerOptions { Address=config.Address,Port=config.Port,Folder=config.Folder,MaxSessions=config.MaxSessions,TimeoutSeconds=config.TimeoutSeconds,MaxFileBytes=config.MaxFileBytes };
             Directory.CreateDirectory(options.Folder);
@@ -173,7 +170,6 @@ namespace Udm10.ServerCore
                     {
                         WriteLog("UPLOAD_START id="+id+" name="+name+" bytes="+expected);
                         await Wire.WriteMessage(client,new Message { Type="READY",Id=id,Name=name },options.TimeoutSeconds,token).ConfigureAwait(false);
-                        Emit(id,remote,name,"Uploading",0,expected,0,"");
                         byte[] buffer=new byte[Wire.BufferSize]; long lastReport=0;
                         while(received<expected)
                         {
@@ -231,42 +227,25 @@ namespace Udm10.ServerCore
                 }
             }
         }
-        public Task StopAsync()
+        public async Task StopAsync()
         {
-            lock(stopGate)
-            {
-                if(shutdown==null) return Task.CompletedTask;
-                if(stopTask==null) stopTask=StopCoreAsync();
-                return stopTask;
-            }
-        }
-        private async Task StopCoreAsync()
-        {
-            try
-            {
-                shutdown.Cancel(); listener.Stop();
-                if(acceptTask!=null) { try { await acceptTask.ConfigureAwait(false); } catch(OperationCanceledException) { } }
-                Task[] pending; lock(gate) pending=sessions.Values.ToArray();
-                await Task.WhenAll(pending).ConfigureAwait(false);
-                WriteLog("SERVER_STOP");
-            }
-            finally
-            {
-                lock(logGate) { if(logWriter!=null) { logWriter.Dispose(); logWriter=null; } }
-                if(folderLock!=null) { folderLock.Dispose(); folderLock=null; }
-                // Keep shutdown as a stopped marker. Create a new instance to restart.
-            }
+            if(shutdown==null) return;
+            shutdown.Cancel(); listener.Stop();
+            if(acceptTask!=null) { try { await acceptTask.ConfigureAwait(false); } catch(OperationCanceledException) { } }
+            Task[] pending; lock(gate) pending=sessions.Values.ToArray();
+            await Task.WhenAll(pending).ConfigureAwait(false);
+            WriteLog("SERVER_STOP");
+            lock(logGate) { if(logWriter!=null) { logWriter.Dispose(); logWriter=null; } }
+            if(folderLock!=null) { folderLock.Dispose(); folderLock=null; }
+            // Keep shutdown as a stopped marker. This instance cannot be restarted.
         }
         private void Emit(string id,string remote,string name,string state,long received,long total,double speed,string detail)
         {
             var handler=Changed;
             if(handler!=null)
             {
-                foreach(Action<ServerEvent> observer in handler.GetInvocationList())
-                {
-                    try { observer(new ServerEvent { Id=id,Remote=remote,Name=name,State=state,Received=received,Total=total,BytesPerSecond=speed,Detail=detail }); }
-                    catch(Exception ex) { WriteLog("OBSERVER_ERROR "+ex.GetType().Name); }
-                }
+                try { handler(new ServerEvent { Id=id,Remote=remote,Name=name,State=state,Received=received,Total=total,BytesPerSecond=speed,Detail=detail }); }
+                catch(Exception ex) { WriteLog("OBSERVER_ERROR "+ex.GetType().Name); }
             }
         }
         private void WriteLog(string text)
@@ -278,10 +257,7 @@ namespace Udm10.ServerCore
                 catch(IOException) { line+=" [LOG_FILE_WRITE_FAILED]"; }
                 catch(ObjectDisposedException) { }
             }
-            var handler=Log;
-            if(handler!=null)
-                foreach(Action<string> observer in handler.GetInvocationList())
-                { try { observer(line); } catch { /* One UI observer cannot suppress other logs. */ } }
+            var handler=Log; if(handler!=null) { try { handler(line); } catch { } }
         }
     }
 }
